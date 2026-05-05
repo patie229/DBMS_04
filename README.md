@@ -149,7 +149,7 @@ why it violates 3NF.
 2- CustNo → CustCity: each customer is associated with exactly one city.
 3- Therefore, by transitivity, OrderNo → CustCity.
 > 
-This violates Third Normal Form (3NF) because:
+>This violates Third Normal Form (3NF) because:
 1- CustNo is not a superkey of the relation, and
 2- CustCity is not a key attribute (it is not part of any candidate key).
 As a result, CustCity (and CustName) are transitively dependent on the primary key through CustNo.
@@ -158,6 +158,9 @@ As a result, CustCity (and CustName) are transitively dependent on the primary k
 your FD list. Is `OrderNo` alone a superkey of the flat table?
 
 > *Your answer:*
+>
+> {OrderNo}+ = {OrderNo, Date, Plate, CustNo, CustName, CustCity, Make, Model, Year}
+Is OrderNo a superkey? No. Its closure does not include attributes such as ItemNo, MechId, Description, or Hours. Since one order can contain multiple work items, the combination (OrderNo, ItemNo) is necessary to uniquely identify a tuple.
 
 ---
 
@@ -185,15 +188,10 @@ primary key?
 > *Your check:*
 >
 > customer: simple key `cust_no`. `cust_name` and `cust_city` are entirely dependent on `cust_no`.
-
 vehicle: simple key `plate`. `make`, `model`, `year`, and `cust_no` are entirely determined by the plate.
-
 mechanic: simple key `mech_id`. `mech_name` and `hourly_rate` are entirely dependent on `mech_id`.
-
 order: simple key `order_no`. `date`, `plate`, and `cust_no` are all dependent on `order_no`.
-
 work_item: composite key (`order_no`, `item_no`). `mech_id`, `description`, and `hours` cannot be determined without both attributes together; a single order can have multiple items.
-
 All relationships are 2NF.
 
 ### Task 2b – Decompose into 3NF
@@ -212,13 +210,9 @@ If not, perform the missing decomposition.
 > *Your analysis and any further decomposition:*
 >
 > In `order`: The only non-trivial dependency relationship is `order_no` → `date`, `plate`, `cust_no`.
-
 None of the dependencies between `date`, `plate`, and `cust_no` exist. `cust_name` and `cust_city` have already been extracted to `customer`. `order` is already in 3NF.
-
 In `vehicle`: The dependency relationship `plate` → `cust_no` is valid. Is this a transitive dependency? No, `cust_no` is a foreign key directly determined by the primary key `plate`. There is no chain `plate → X → something` where X is not a superkey. `vehicle` is already in 3NF.
-
 Conclusion: The five relationships resulting from the 2NF decomposition are all in 3NF.
-
 No further decomposition is necessary.
 
 ### Task 2c – Verify Losslessness
@@ -232,6 +226,14 @@ Name the shared attributes, state the FD you rely on, and conclude whether the
 decomposition is lossless.
 
 > *Your verification:*
+>
+> Decomposition: order(order_no, date, plate, cust_no) and vehicle(plate, make, model, year, cust_no)
+Shared attributes: R1∩R2={plate,cust_no}
+FD relied on:
+plate→make,model,year
+Heath check:
+(R1∩R2)→(R2∖R1):{plate,cust_no}→{make,model,year} 
+Conclusion: The shared attributes contain plate, which is the primary key of vehicle. Heath's criterion is satisfied → the decomposition is lossless.
 
 ### Questions for Task 2
 
@@ -251,7 +253,16 @@ $X$ must be a superkey.
 
 > *Your answer:*
 >
-> 
+> customer(cust_no, cust_name, cust_city)
+The only non-trivial FD is cust_no → cust_name, cust_city. Since cust_no is the primary key, it is a superkey.
+mechanic(mech_id, mech_name, hourly_rate)
+The FD is mech_id → mech_name, hourly_rate. The determinant is the primary key.
+vehicle(plate, cust_no, make, model, year)
+The only FD is plate → cust_no, make, model, year. No other meaningful FDs exist (e.g. make → model or (make, model) → year do not hold).
+order(order_no, date, plate, cust_no)
+The FD is order_no → date, plate, cust_no. Although plate → cust_no exists via vehicle, it is not treated as a separate FD here. The primary key remains the determinant.
+work_item(order_no, item_no, mech_id, description, hours)
+The FD is (order_no, item_no) → mech_id, description, hours. No smaller determinant applies (e.g. order_no → mech_id or item_no → description do not hold).
 
 **Question 2.3:** The hourly rate of a mechanic is stored in `mechanic`. If a
 mechanic changes their rate during the year, what problem arises for already
@@ -616,6 +627,23 @@ then the SQL query.
 
 ```sql
 -- Query 5a: insert here
+
+-- Query 5 a : All work items for customer ' Berger , Franz '
+-- Query 5 a : All work items for customer ' Berger , Franz '
+-- Ordered by date and item number
+-- Ordered by date and item number
+SELECT
+o.order_no ,
+o.date ,
+v.plate ,
+wi.description ,
+wi.hours
+FROM customer c
+JOIN " order " o ON o.cust_no = c.cust_no
+JOIN vehicle v ON v.plate = o.plate
+JOIN work_item wi ON wi.order_no = o.order_no
+WHERE c.cust_name = 'Berger , Franz'
+ORDER BY o.date , wi.item_no ;
 ```
 
 <details>
@@ -651,6 +679,19 @@ least one work item). Sort descending by `total_hours`.
 
 ```sql
 -- Query 5b: insert here
+
+-- Query 5 b : Total hours per mechanic for orders in March
+2026
+SELECT
+m.mech_name ,
+ROUND ( SUM ( wi.hours ) , 1) AS total_hours ,
+COUNT ( DISTINCT wi.order_no ) AS orders
+FROM mechanic m
+JOIN work_item wi ON wi.mech_id = m.mech_id
+JOIN " order " o ON o.order_no = wi.order_no
+WHERE o.date LIKE '2026 -03 -%'
+GROUP BY m.mech_id , m.mech_name
+ORDER BY total_hours DESC ;
 ```
 
 <details>
@@ -687,8 +728,24 @@ Use a set-difference approach with `EXCEPT` and also write an alternative using
 -- Variant 1: EXCEPT
 -- Query 5c-1: insert here
 
+-- Query 5c -1 : Vehicles with no repair order ( EXCEPT )
+SELECT plate , model FROM vehicle
+EXCEPT
+SELECT v.plate , v.model
+FROM vehicle v
+JOIN " order " o ON o.plate = v.plate ;
+
 -- Variant 2: NOT EXISTS
 -- Query 5c-2: insert here
+
+-- Query 5c -2 : Vehicles with no repair order ( NOT EXISTS )
+SELECT v.plate , v.model
+FROM vehicle v
+WHERE NOT EXISTS (
+SELECT 1
+FROM " order " o
+WHERE o.plate = v.plate
+) ;
 ```
 
 <details>
@@ -802,14 +859,69 @@ An open order may not yet have any work items. A completed order means that all 
    mechanic's hourly rate historically — i.e. which rate applied at the time a
    specific order was processed. Write the modified `CREATE TABLE` statements.
 
+   >SELECT wi.order_no , wi.hours ,
+mr.hourly_rate ,
+wi.hours * mr.hourly_rate AS amount
+FROM work_item wi
+JOIN "order" o ON o.order_no = wi.order_no
+JOIN mechanic_rate mr ON mr.mech_id = wi.mech_id
+AND mr.valid_from = (
+SELECT MAX (valid_from) FROM mechanic_rate
+WHERE mech_id = wi.mech_id AND valid_from <= o.date ) ;
+   >
+   >CREATE TABLE mechanic_rate (
+mech_id INTEGER NOT NULL ,
+valid_from DATE NOT NULL ,
+hourly_rate REAL NOT NULL CHECK ( hourly_rate > 0) ,
+PRIMARY KEY ( mech_id , valid_from ) ,
+FOREIGN KEY ( mech_id ) REFERENCES mechanic ( mech_id )
+ON DELETE RESTRICT ON UPDATE CASCADE
+) ;
+
 2. **Spare parts:** The workshop also charges for parts in addition to labour.
    Extend the schema with a `part` table and a `order_part` join table that
    records which parts were used in which order. Maintain normal form and
    referential integrity.
 
+   >CREATE TABLE part (
+    part_no     INTEGER PRIMARY KEY,
+    description TEXT    NOT NULL,
+    unit_price  REAL    NOT NULL CHECK (unit_price >= 0)
+);
+
+CREATE TABLE work_item_part (
+    order_no INTEGER NOT NULL,
+    item_no  INTEGER NOT NULL,
+    part_no  INTEGER NOT NULL,
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    PRIMARY KEY (order_no, item_no, part_no),
+    FOREIGN KEY (order_no, item_no) REFERENCES work_item(order_no, item_no)
+        ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (part_no) REFERENCES part(part_no)
+        ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
 3. **Total invoice per order:** Write a query that computes the total amount for
    each order: the sum of `hours × hourly_rate` across all work items. Which
    tables need to be joined?
+
+   >SELECT
+    o.order_no,
+    o.date,
+    ROUND(
+        COALESCE(SUM(wi.hours * m.hourly_rate), 0) +
+        COALESCE((
+            SELECT SUM(wip.quantity * p.unit_price)
+            FROM work_item_part wip
+            JOIN part p ON p.part_no = wip.part_no
+            WHERE wip.order_no = o.order_no
+        ), 0)
+    , 2) AS total_amount
+FROM "order" o
+JOIN work_item wi ON wi.order_no = o.order_no
+JOIN mechanic  m  ON m.mech_id   = wi.mech_id
+GROUP BY o.order_no, o.date
+ORDER BY o.order_no;
 
 4. **GitHub Actions:** Add a workflow file `.github/workflows/release.yml` that
    installs PlantUML, renders `schema.puml` to `schema.svg`, and publishes it
