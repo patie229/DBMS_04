@@ -680,12 +680,18 @@ and why does the join order not affect the *result*, but does affect *performanc
 > *Your answer:*
 >
 > The order of joins does not change the final result because the natural join is commutative and associative (properties of relational algebra).
-From a performance perspective, however, the optimizer tries to reduce intermediate result sizes as early as possible. An efficient strategy would be:
-1- First apply the condition cust_name = 'Berger, Franz' to the customer table (reducing it from 2 rows to 1).
-2- Join this result with order (1 customer → 2 out of 3 orders).
-3- Join with work_item (2 orders → 4 out of 5 work items).
-4- Finally, join with vehicle to retrieve the license plate.
-Creating an index on customer.cust_name would significantly speed up the first step.
+> 
+>From a performance perspective, however, the optimizer tries to reduce intermediate result sizes as early as possible. An efficient strategy would be:
+> 
+>1- First apply the condition cust_name = 'Berger, Franz' to the customer table (reducing it from 2 rows to 1).
+> 
+>2- Join this result with order (1 customer → 2 out of 3 orders).
+> 
+>3- Join with work_item (2 orders → 4 out of 5 work items).
+> 
+>4- Finally, join with vehicle to retrieve the license plate.
+> 
+>Creating an index on customer.cust_name would significantly speed up the first step.
 
 ---
 
@@ -790,12 +796,13 @@ be preferred in practice? Consider readability and extensibility.
 > The two approaches are logically equivalent as long as no NULL values are involved.
 In practice:
 EXCEPT is preferable when:
-- comparing the results of two separate queries (better readability),
-- the problem is naturally expressed as a set difference.
+>- comparing the results of two separate queries (better readability),
+>- the problem is naturally expressed as a set difference.
 NOT EXISTS is preferable when:
-- the correlated subquery must check multiple conditions (e.g. WHERE o.plate = v.plate AND o.date > '2025-01-01'), since it is more flexible and easier to extend.
+>- the correlated subquery must check multiple conditions (e.g. WHERE o.plate = v.plate AND o.date > '2025-01-01'), since it is more flexible and easier to extend.
 However, if the left-hand table contains NULL values, EXCEPT may behave differently depending on the DBMS (some treat NULL = NULL in set operations, while standard comparisons do not).
-In this case, NOT EXISTS is clearer because it explicitly expresses that no corresponding order exists for a given vehicle, making the query more understandable from a semantic and maintenance perspective.
+>
+>In this case, NOT EXISTS is clearer because it explicitly expresses that no corresponding order exists for a given vehicle, making the query more understandable from a semantic and maintenance perspective.
 
 ---
 
