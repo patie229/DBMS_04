@@ -138,9 +138,9 @@ definition from Lecture 04.
 > 
 >The primary key is {OrderNo, ItemNo}. The functional dependency CustNo → CustCity is determined solely by CustNo, and CustNo itself depends only on OrderNo, which is a proper subset of the composite key.
 > 
-Formally: CustNo is a strict subset of {OrderNo, ItemNo}, and the dependency CustNo → CustCity holds.
+>Formally: CustNo is a strict subset of {OrderNo, ItemNo}, and the dependency CustNo → CustCity holds.
 >
-According to the definition of Second Normal Form (2NF), CustCity is therefore partially dependent on the primary key, and the relation violates 2NF.
+>According to the definition of Second Normal Form (2NF), CustCity is therefore partially dependent on the primary key, and the relation violates 2NF.
 
 **Question 1.2:** Identify a transitive dependency in the flat table and explain
 why it violates 3NF.
@@ -161,7 +161,7 @@ why it violates 3NF.
 > 
 >2- CustCity is not a key attribute (it is not part of any candidate key).
 > 
-As a result, CustCity (and CustName) are transitively dependent on the primary key through CustNo.
+>As a result, CustCity (and CustName) are transitively dependent on the primary key through CustNo.
 
 **Question 1.3:** Compute the attribute closure $\{\mathrm{OrderNo}\}^+$ using
 your FD list. Is `OrderNo` alone a superkey of the flat table?
@@ -200,15 +200,15 @@ primary key?
 >
 > customer: simple key `cust_no`. `cust_name` and `cust_city` are entirely dependent on `cust_no`.
 > 
-vehicle: simple key `plate`. `make`, `model`, `year`, and `cust_no` are entirely determined by the plate.
+>vehicle: simple key `plate`. `make`, `model`, `year`, and `cust_no` are entirely determined by the plate.
 >
-mechanic: simple key `mech_id`. `mech_name` and `hourly_rate` are entirely dependent on `mech_id`.
+>mechanic: simple key `mech_id`. `mech_name` and `hourly_rate` are entirely dependent on `mech_id`.
 >
-order: simple key `order_no`. `date`, `plate`, and `cust_no` are all dependent on `order_no`.
+>order: simple key `order_no`. `date`, `plate`, and `cust_no` are all dependent on `order_no`.
 >
-work_item: composite key (`order_no`, `item_no`). `mech_id`, `description`, and `hours` cannot be determined without both attributes together; a single order can have multiple items.
+>work_item: composite key (`order_no`, `item_no`). `mech_id`, `description`, and `hours` cannot be determined without both attributes together; a single order can have multiple items.
 >
-All relationships are 2NF.
+>All relationships are 2NF.
 
 ### Task 2b – Decompose into 3NF
 
@@ -227,7 +227,8 @@ If not, perform the missing decomposition.
 >
 > In `order`: The only non-trivial dependency relationship is `order_no` → `date`, `plate`, `cust_no`.
 None of the dependencies between `date`, `plate`, and `cust_no` exist. `cust_name` and `cust_city` have already been extracted to `customer`. `order` is already in 3NF.
-In `vehicle`: The dependency relationship `plate` → `cust_no` is valid. Is this a transitive dependency? No, `cust_no` is a foreign key directly determined by the primary key `plate`. There is no chain `plate → X → something` where X is not a superkey. `vehicle` is already in 3NF.
+> 
+>In `vehicle`: The dependency relationship `plate` → `cust_no` is valid. Is this a transitive dependency? No, `cust_no` is a foreign key directly determined by the primary key `plate`. There is no chain `plate → X → something` where X is not a superkey. `vehicle` is already in 3NF.
 Conclusion: The five relationships resulting from the 2NF decomposition are all in 3NF.
 No further decomposition is necessary.
 
@@ -262,7 +263,7 @@ necessary.
 >
 > Scenario: A customer brings in a vehicle that doesn't belong to them (borrowed from a friend, company car). In this case, `vehicle.cust_no` points to the owner of the vehicle, but the customer who brought in the car and is responsible for paying the bill (`order.cust_no`) is a different person.
 > 
-Without the direct link `order → customer`, it would be impossible to determine who owes the bill without joining `vehicle`, and this join would return the wrong person. The direct link is therefore semantically justified and does not violate 3NF: `cust_no` in `order` depends directly on the `order_no` key, not transitively via `plate`.
+>Without the direct link `order → customer`, it would be impossible to determine who owes the bill without joining `vehicle`, and this join would return the wrong person. The direct link is therefore semantically justified and does not violate 3NF: `cust_no` in `order` depends directly on the `order_no` key, not transitively via `plate`.
 
 **Question 2.2:** Is the schema after the 3NF decomposition also in BCNF?
 Justify your answer using the definition: for every non-trivial FD $X \rightarrow Y$,
@@ -293,7 +294,7 @@ historical hourly rates?
 > Schema extension solution:
 Create a historical rate table:
 
-´´´sql
+```sql
 CREATE TABLE mechanic_ rate (
 mech_id INTEGER NOT NULL ,
 valid_from DATE NOT NULL ,
@@ -302,6 +303,7 @@ PRIMARY KEY ( mech_id , valid_from ) ,
 FOREIGN KEY ( mech_id ) REFERENCES mechanic ( mech_id )
 ON DELETE RESTRICT ON UPDATE CASCADE
 ) ;
+```
 
 > To find the applicable rate for a given order, we combine `work_item` with `mechanic_rate`, searching for the row where `valid_from` is the largest date less than or equal to the order date. The current rate in `mechanic_rate` can then be deleted or kept as the default value.
 
