@@ -145,13 +145,19 @@ why it violates 3NF.
 > *Your answer:*
 >
 > Example: OrderNo → CustNo → CustCity
+> 
 >1- OrderNo → CustNo: each order is assigned to exactly one customer.
+> 
 >2- CustNo → CustCity: each customer is associated with exactly one city.
+> 
 >3- Therefore, by transitivity, OrderNo → CustCity.
 > 
 >This violates Third Normal Form (3NF) because:
+> 
 >1- CustNo is not a superkey of the relation, and
+> 
 >2- CustCity is not a key attribute (it is not part of any candidate key).
+> 
 As a result, CustCity (and CustName) are transitively dependent on the primary key through CustNo.
 
 **Question 1.3:** Compute the attribute closure $\{\mathrm{OrderNo}\}^+$ using
