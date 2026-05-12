@@ -915,9 +915,9 @@ ON DELETE RESTRICT ON UPDATE CASCADE
     CREATE TABLE part (
     part_no     INTEGER PRIMARY KEY,
     description TEXT    NOT NULL,
-    unit_price  REAL    NOT NULL CHECK (unit_price >= 0)
-);
-```
+    unit_price  REAL    NOT NULL CHECK (unit_price >= 0));
+   ```
+
 ```sql
 CREATE TABLE work_item_part (
     order_no INTEGER NOT NULL,
