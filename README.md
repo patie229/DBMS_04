@@ -884,8 +884,8 @@ An open order may not yet have any work items. A completed order means that all 
 1. **Hourly rate history:** Design a schema extension that allows recording a
    mechanic's hourly rate historically — i.e. which rate applied at the time a
    specific order was processed. Write the modified `CREATE TABLE` statements.
-
-   >SELECT wi.order_no , wi.hours ,
+```sql
+SELECT wi.order_no , wi.hours ,
 mr.hourly_rate ,
 wi.hours * mr.hourly_rate AS amount
 FROM work_item wi
@@ -894,8 +894,9 @@ JOIN mechanic_rate mr ON mr.mech_id = wi.mech_id
 AND mr.valid_from = (
 SELECT MAX (valid_from) FROM mechanic_rate
 WHERE mech_id = wi.mech_id AND valid_from <= o.date ) ;
-   >
-   >CREATE TABLE mechanic_rate (
+```
+```sql
+CREATE TABLE mechanic_rate (
 mech_id INTEGER NOT NULL ,
 valid_from DATE NOT NULL ,
 hourly_rate REAL NOT NULL CHECK ( hourly_rate > 0) ,
@@ -903,18 +904,21 @@ PRIMARY KEY ( mech_id , valid_from ) ,
 FOREIGN KEY ( mech_id ) REFERENCES mechanic ( mech_id )
 ON DELETE RESTRICT ON UPDATE CASCADE
 ) ;
+```
 
 2. **Spare parts:** The workshop also charges for parts in addition to labour.
    Extend the schema with a `part` table and a `order_part` join table that
    records which parts were used in which order. Maintain normal form and
    referential integrity.
 
-   >CREATE TABLE part (
+    ```sql
+    CREATE TABLE part (
     part_no     INTEGER PRIMARY KEY,
     description TEXT    NOT NULL,
     unit_price  REAL    NOT NULL CHECK (unit_price >= 0)
 );
-
+```
+```sql
 CREATE TABLE work_item_part (
     order_no INTEGER NOT NULL,
     item_no  INTEGER NOT NULL,
@@ -926,12 +930,14 @@ CREATE TABLE work_item_part (
     FOREIGN KEY (part_no) REFERENCES part(part_no)
         ON DELETE RESTRICT ON UPDATE CASCADE
 );
+```
 
 3. **Total invoice per order:** Write a query that computes the total amount for
    each order: the sum of `hours × hourly_rate` across all work items. Which
    tables need to be joined?
 
-   >SELECT
+   ```sql
+   SELECT
     o.order_no,
     o.date,
     ROUND(
@@ -943,11 +949,13 @@ CREATE TABLE work_item_part (
             WHERE wip.order_no = o.order_no
         ), 0)
     , 2) AS total_amount
-FROM "order" o
-JOIN work_item wi ON wi.order_no = o.order_no
-JOIN mechanic  m  ON m.mech_id   = wi.mech_id
-GROUP BY o.order_no, o.date
-ORDER BY o.order_no;
+   FROM "order" o
+   JOIN work_item wi ON wi.order_no = o.order_no
+   JOIN mechanic  m  ON m.mech_id   = wi.mech_id
+   GROUP BY o.order_no, o.date
+   ORDER BY o.order_no;
+   ```
+
 
 4. **GitHub Actions:** Add a workflow file `.github/workflows/release.yml` that
    installs PlantUML, renders `schema.puml` to `schema.svg`, and publishes it
